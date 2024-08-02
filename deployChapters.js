@@ -14,7 +14,7 @@ const {join,isAbsolute,normalize,resolve}=require('path')
 let DEPLOYMENT_ROOT = null 
 let OS = null
 const CHAPTER_ROOT = 'JSNAD-Assignments' //This directory will be created in the deployment root, and all chapters created within it.
-const INPUTFILE=join(__dirname, 'labs.json')
+const INPUTFILE=join(__dirname, 'JSNAD_labs.json')
 
 
 init()
