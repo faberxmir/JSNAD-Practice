@@ -1,4 +1,4 @@
-{"chapters":[
+{"JSNAD-Practice-Assignments":[
     {
     "chapter": "Event Emitters",
     "purpose": "This chapter aims to teach the basics and advanced concepts of using EventEmitter in Node.js.",
@@ -524,6 +524,72 @@
         "subtitle": "Implement a Worker Pool",
         "description": "Create a worker pool using child processes to perform parallel tasks and aggregate the results.",
         "purpose": "To apply knowledge of child processes in building a system that handles tasks concurrently."
+      }
+    ]
+  },
+  {
+    "chapter": "Exploring Promisify",
+    "purpose": "To learn how to convert callback-based functions to Promises using the promisify function in Node.js and apply them in various contexts.",
+    "assignments": [
+      {
+        "Order": 1,
+        "subtitle": "Introduction to Promisify",
+        "description": "Learn the basics of the promisify function by converting a simple callback-based function to a Promise-based one.",
+        "purpose": "Understand how promisify works and why it's useful for modernizing asynchronous code."
+      },
+      {
+        "Order": 2,
+        "subtitle": "Promisify a File System Operation",
+        "description": "Use promisify to convert the fs.readFile function to a Promise-based version and read a file asynchronously.",
+        "purpose": "Apply promisify to real-world Node.js API functions that use callbacks, making them easier to work with using async/await."
+      },
+      {
+        "Order": 3,
+        "subtitle": "Handling Errors with Promisify",
+        "description": "Promisify a callback function that might fail, and handle errors using async/await with try-catch blocks.",
+        "purpose": "Learn to handle errors effectively when using Promises, a crucial part of robust asynchronous code."
+      },
+      {
+        "Order": 4,
+        "subtitle": "Promisify Multiple Functions",
+        "description": "Convert multiple callback-based functions to Promises using promisify, and run them in parallel with Promise.all.",
+        "purpose": "Explore how promisify can be used to work with multiple asynchronous tasks simultaneously."
+      },
+      {
+        "Order": 5,
+        "subtitle": "Chaining Promisified Functions",
+        "description": "Chain multiple promisified functions to perform a series of operations and return a final result.",
+        "purpose": "Understand how to build complex asynchronous workflows by chaining promises."
+      },
+      {
+        "Order": 6,
+        "subtitle": "Integrating with Third-Party Libraries",
+        "description": "Use promisify to convert functions from a third-party library that relies on callbacks into Promise-based functions.",
+        "purpose": "Demonstrate the flexibility of promisify when working with various Node.js modules and libraries."
+      },
+      {
+        "Order": 7,
+        "subtitle": "Custom Promisify Function",
+        "description": "Implement a custom version of the promisify function and use it to convert a callback function to a Promise.",
+        "purpose": "Deepen understanding of how promisify works internally and the concept of converting callbacks to Promises."
+      },
+      {
+        "Order": 8,
+        "subtitle": "Promisify with Timeout",
+        "description": "Add a timeout to a promisified function to reject the promise if it takes too long to resolve.",
+        "purpose": "Explore advanced Promise patterns, such as handling timeouts, to enhance control over asynchronous operations."
+      },
+      {
+        "Order": 9,
+        "subtitle": "Combining Promisify with Streams",
+        "description": "Use promisify in conjunction with streams, such as reading a file stream asynchronously with Promise-based functions.",
+        "purpose": "Demonstrate how promisify can be used to integrate with other Node.js features, like streams, for more complex scenarios."
+      },
+      {
+        "Order": 10,
+        "subtitle": "Advanced Promisify Patterns",
+        "description": "Explore advanced patterns such as promisifying functions with multiple callbacks, like those with error-first and data-second arguments.",
+        "purpose": "Gain a deeper understanding of how to use promisify in complex callback scenarios, expanding its utility in various contexts."
       }
     ]
   },
