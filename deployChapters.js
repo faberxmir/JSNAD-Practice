@@ -12,8 +12,7 @@ const {join,isAbsolute,normalize,resolve}=require('path')
 //This is the directory on the system that the tasks will be deployed in.
 //If not altered, it will install to the users home folder
 let DEPLOYMENT_ROOT = null 
-let OS = null
-const CHAPTER_ROOT = 'JSNAD-Assignments' //This directory will be created in the deployment root, and all chapters created within it.
+let LABFOLDER = 'javascript-labs'
 const INPUTFILE=join(__dirname, 'JSNAD_labs.json')
 
 
@@ -22,49 +21,81 @@ init()
 
 async function init(){
     const environment = determineHomeAndOS()
-    DEPLOYMENT_ROOT = environment.home
-    OS = environment.home
-    let installpath = join(DEPLOYMENT_ROOT,CHAPTER_ROOT)
-    installpath = sanitizePath(installpath)
+    DEPLOYMENT_ROOT = join( environment.home,LABFOLDER) //As default: set users home directory to be the install directory
 
     if(DEPLOYMENT_ROOT){
-        const result = await startDialogue(installpath, INPUTFILE)
+        const result = await startDialogue(DEPLOYMENT_ROOT, INPUTFILE)
         if(!result.defaults){
-            installpath = join(result.installdir,CHAPTER_ROOT)
-            installpath = sanitizePath(installpath)
+            DEPLOYMENT_ROOT = sanitizePath(DEPLOYMENT_ROOT)
         }
-        let validated = validateInstallDir(installpath)
+        let validated = validateDirForWrite(DEPLOYMENT_ROOT)
         while(!validated) {
-            const {installdir} = await requestNewInstallDirectory('The directory you provided is not a valid directory')
-            sanitizePath(installdir)
-            validated = validateInstallDir(installdir)
+            let {installdir} = await requestNewInstallDirectory('The directory you provided is not a valid directory')
+            installdir = sanitizePath(installdir)
+            validated = validateDirForWrite(installdir)
             if(validated) {
-                installpath=installdir
+                DEPLOYMENT_ROOT=installdir
             }
+            // console.info(`Could not deploy to to ${DEPLOYMENT_ROOT}.\nLikely causes;\n-> User has no home folder?\n-> Deployment directory already exists?`)
         }
-        runDeployment(installpath)
+        runDeployment(DEPLOYMENT_ROOT, INPUTFILE)
     } else {
         exit(-1)
     }
-    console.info('JSNAD Assignments can be found here:',installpath)
+    console.info('Your labs can be found here: ', DEPLOYMENT_ROOT)
     exit(0)
 }
 
-function runDeployment(installpath){
-    console.info('Deploying')
-    const chapterArray = valJSONtoArray(INPUTFILE)
-    if(Array.isArray(chapterArray)){
-            createDirectory(installpath)
-            deployChapters(installpath, chapterArray)
-    } else {
-        console.info(`Could not determine a valid location for deployment.\nLikely causes;\n-> User has no home folder?\n-> Deployment directory, ${DEPLOYMENT_PATH} already exists?`)
+//TODO: This function seems a little redundant. Should be removed.
+function runDeployment(deploypath, jsonpath){
+    console.info(`Deploying all sections to: ${deploypath}\\`)
+    try {
+        parseAndDeploy(jsonpath, deploypath)
+    } catch(error){
+        console.error(error.message)
         exit(-1)
     }
 }
+/**
+ * @param {string} jsonfilepath must be a valid filepath to a jsonfile
+ * @param {string} deploypath must be a valid path for deployment
+ * 
+ * parses and deploys chapters according to the schema below
+ */
+function parseAndDeploy(jsonfilepath, deploypath){
+    console.info(`Validation: \tstarting validation of ${jsonfilepath}`)
+    
+    let JSONOBJECT = fs.readFileSync(jsonfilepath).toString()
+    JSONOBJECT = JSON.parse(JSONOBJECT)
+    if(typeof JSONOBJECT === 'undefined') throw new Error('JSON could not be parsed!')
+    
+    for(let sectiontitle in JSONOBJECT){
+        const chapterArray = JSONOBJECT[sectiontitle]
+        if(Array.isArray(chapterArray) ) {
+            deploySection(sectiontitle, chapterArray, deploypath)
+        } else {
+            console.error('Section did not parse correctly and could not be deployed.\nAssignments'+
+                'assignments were not an array. Title of section that caused the error: ' + sectiontitle)
+        }
+    }
+}
+/**
+ * @param {*} sectiontitle The title of the section to deploy, will be created as its own folder
+ * @param {*} chapterArray An array of chapters that can be validated with the schema in this module
+ * @param {*} deploypath a valid path to deploy the chapter folders
+ */
+function deploySection(sectiontitle, chapterArray, deploypath){
+    console.log(`Deploying section ${sectiontitle}`)
+    const sectionpath = join(deploypath, sectiontitle)
+    createDirectory(sectionpath)
 
-function deployChapters(CHAPTER_ROOT, chapterArray){
+    deployChapters(sectionpath, chapterArray)
+    
+}
+
+function deployChapters(sectionroot, chapterArray){
     for(let chapter of chapterArray) {
-        deploySingleChapter(chapter, CHAPTER_ROOT)
+        deploySingleChapter(chapter, sectionroot)
     }
 
     function deploySingleChapter(inputChapter, CHAPTER_ROOT){
@@ -86,22 +117,27 @@ function deployChapters(CHAPTER_ROOT, chapterArray){
     }
 }
 
-function sanitizePath(path){
-    let result = path
-    result = normalize(path)
-    result = resolve(path)
-    return result
-}
-/** 
- * considers installation parameters and returns install directory
+/**
+ * @param {*} path should be a string
+ * This function checks if path is a valid filepath and normalises it to the current OS
+ * It also invalidates the input path, if the path already exists.
+ * @returns null if path is not valid, or a sanitized version of the path
  */
-function validateInstallDir(installDir){
-    console.info('Deployment directory: ', installDir)
-    let result = false
-    if(isAbsolute(installDir) && !fs.existsSync(installDir)) {
-        result = true
+function validateDirForWrite(path){
+    let result = null
+    path = sanitizePath(path)
+    if(path && isAbsolute(path) && !fs.existsSync(path)) {
+        result = path
+        console.info(`${path} is a valid directory for installation!`)
     } 
     return result
+
+    function sanitizePath(path){
+        let result = null
+        result = normalize(path)
+        result = resolve(path)
+        return result
+    }
 }
 /**
  * @returns an object with the current running os and home folder {os,home}
@@ -129,52 +165,29 @@ function createDirectory(directory){
         } catch (err){
             switch(err.code){
                 case 'EEXIST':
-                    console.error(`Directory at path:\n${err.path}\nalready exists. Aborting deployment!\n`)
-                    abortAndCleanup(directory)
+                    console.error(`Directory at path:\n${err.path}\nalready exists! Skipping write\n`)
                     break;
                 default:
                     console.error('An error occurred while trying to create a directory. Aborting deployment!','Are you sure you have the right?')
-                    abortAndCleanup(directory)
             }
         } 
     }
 }
 
-/**
- * @param {*} path must be a valid filepath to a jsonfile
- * @returns an array of chapters according to the schema, or null if validation fails
- */
-function valJSONtoArray(path){
-    let result = null
-    console.info(`Validation: \tstarting validation of ${path}`)
-    
-    const JSONOBJECT = fs.readFileSync(path).toString()
-    const chapterArray = JSON.parse(JSONOBJECT).chapters
+function validateChapter(chapter){
+    let result = false
+    //AJV for for validation
+    const Ajv = require('ajv')
+    const ajv = new Ajv()
+    const schema = getChapterSchema()
+    const validate = ajv.compile(schema)
 
-    let isValid=validateChapters();
-    if(isValid){
-        console.info(`validation: \t${path} validated with no errors!`)
-        result = chapterArray
-    }
+    do {
+        result = validate(chapter)
+    } while(result)
+    if(!result) console.error(`validation: \t${path} does not validate according to schema`, validate.errors)
 
     return result
-
-    function validateChapters(){
-        let result = true
-        //AJV for for validation
-        const Ajv = require('ajv')
-        const ajv = new Ajv()
-        const schema = getChapterSchema()
-        const validate = ajv.compile(schema)
-        for(let chapter of chapterArray){
-            if(!validate(chapter)) {
-                console.error(`validation: \t${path} does not validate according to schema`, validate.errors)
-                result = false
-                break;
-            }
-        }
-        return result
-    }
 }
 
 function getChapterSchema(){
